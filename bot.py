@@ -7,6 +7,9 @@ from bidi.algorithm import get_display
 from fpdf import FPDF
 from telegram import Update, InputFile
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from fastapi import FastAPI, Request
+from telegram.ext import AIORateLimiter
+import uvicorn
 
 nest_asyncio.apply()
 
@@ -48,8 +51,6 @@ def create_pdf(user):
     pdf.add_page()
     pdf.add_font("Vazir", "", "Vazirmatn-Regular.ttf")
     pdf.set_font("Vazir", size=14)
-
-    # تنظیم راست‌چین بودن
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_right_margin(10)
     pdf.set_left_margin(10)
@@ -79,7 +80,6 @@ def create_pdf(user):
 
     pdf.output(filename)
     return filename
-
 
 # دستور /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -129,7 +129,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if "age" not in user:
         if not text.isdigit():
-            await update.message.reply_text(f"سلام {first_name}! 👋 لطفاً سنت رو وارد کن 🧓 (عدد)")
+            await update.message.reply_text("سنت رو به عدد وارد کن.")
             return
         user["age"] = int(text)
         save_data()
@@ -164,14 +164,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_data()
         os.remove(pdf_file)
 
-# راه‌اندازی بات
+# راه‌اندازی Webhook با FastAPI
+load_data()
+TOKEN = "7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8"
+WEBHOOK_PATH = f"/bot/{TOKEN}"
+app = FastAPI()
+application = ApplicationBuilder().token(TOKEN).rate_limiter(AIORateLimiter()).build()
+
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("reset", reset))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+@app.post(WEBHOOK_PATH)
+async def telegram_webhook(req: Request):
+    data = await req.json()
+    await application.update_queue.put(Update.de_json(data, application.bot))
+    return {"status": "ok"}
+
 if __name__ == "__main__":
-    load_data()
-    app = ApplicationBuilder().token("7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8").build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("reset", reset))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    print("Bot is running...")
-    app.run_polling()
+    import asyncio
+    async def main():
+        await application.initialize()
+        await application.bot.set_webhook(url="https://your-render-url.onrender.com" + WEBHOOK_PATH)
+        await application.start()
+        await application.updater.start_polling()
+    asyncio.run(main())
+    uvicorn.run("bot:app", host="0.0.0.0", port=10000)
