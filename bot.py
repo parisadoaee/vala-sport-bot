@@ -181,7 +181,8 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_m
 async def telegram_webhook(req: Request):
     data = await req.json()
     print("📩 پیام دریافتی:", data)  # ← این خط برای تست
-    await application.update_queue.put(Update.de_json(data, application.bot))
+    await application.process_update(Update.de_json(data, application.bot))
+
     return {"status": "ok"}
 
 if __name__ == "__main__":
