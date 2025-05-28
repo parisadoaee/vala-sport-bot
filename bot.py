@@ -1,3 +1,4 @@
+
 import json
 import os
 import nest_asyncio
@@ -166,20 +167,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # راه‌اندازی Webhook با FastAPI
 load_data()
-TOKEN = "7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8"  # 🔐 توکن رباتت رو اینجا بذار
+TOKEN = "7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8"
 WEBHOOK_PATH = f"/bot/{TOKEN}"
-WEBHOOK_URL = "https://vala-sport-bot.onrender.com" + WEBHOOK_PATH  # 🔗 آدرس سایتت روی Render
+WEBHOOK_URL = "https://vala-sport-bot.onrender.com" + WEBHOOK_PATH
 
-# تعریف FastAPI و Bot
 app = FastAPI()
 application = ApplicationBuilder().token(TOKEN).rate_limiter(AIORateLimiter()).build()
 
-# اضافه کردن هندلرها
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("reset", reset))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-# تابع async برای init و webhook
 @app.on_event("startup")
 async def on_startup():
     await application.initialize()
@@ -189,14 +187,12 @@ async def on_startup():
 @app.post(WEBHOOK_PATH)
 async def telegram_webhook(req: Request):
     data = await req.json()
-    print("📩 پیام دریافتی:", data)  # ← این خط برای تست
+    print("📩 پیام دریافتی:", data)
     await application.process_update(Update.de_json(data, application.bot))
-
     return {"status": "ok"}
-    if __name__ == "__main__":
+
+if __name__ == "__main__":
     import uvicorn
     import os
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run("bot:app", host="0.0.0.0", port=port)
-
-
