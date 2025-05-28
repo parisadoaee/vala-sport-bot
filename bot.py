@@ -178,6 +178,10 @@ application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("reset", reset))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
+@app.get("/")
+async def root():
+    return {"message": "Bot is running 🚀"}
+    
 @app.on_event("startup")
 async def on_startup():
     await application.initialize()
