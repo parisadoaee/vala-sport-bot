@@ -1,4 +1,3 @@
-
 import json
 import os
 import nest_asyncio
@@ -6,8 +5,8 @@ import arabic_reshaper
 from fpdf.enums import XPos, YPos
 from bidi.algorithm import get_display
 from fpdf import FPDF
-from telegram import Update, InputFile
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup  # اضافه شد
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters, CallbackQueryHandler  # CallbackQueryHandler اضافه شد
 from fastapi import FastAPI, Request
 from telegram.ext import AIORateLimiter
 import uvicorn
@@ -19,19 +18,16 @@ ARCHIVE_FILE = "archive.json"
 user_data = {}
 temp_users = {}
 
-# بارگذاری اطلاعات
 def load_data():
     global user_data
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             user_data = json.load(f)
 
-# ذخیره اطلاعات جاری
 def save_data():
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(user_data, f, ensure_ascii=False, indent=2)
 
-# انتقال به آرشیو
 def archive_user(user_id):
     archive = {}
     if os.path.exists(ARCHIVE_FILE):
@@ -41,7 +37,6 @@ def archive_user(user_id):
     with open(ARCHIVE_FILE, "w", encoding="utf-8") as f:
         json.dump(archive, f, ensure_ascii=False, indent=2)
 
-# ساخت PDF
 def reshape(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
@@ -82,21 +77,24 @@ def create_pdf(user):
     pdf.output(filename)
     return filename
 
-# دستور /start
+# ======= تغییرات در اینجا ========
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     first_name = update.message.from_user.first_name
     username = update.message.from_user.username or "بدون‌نام‌کاربری"
 
-    if user_id in user_data:
-        temp_users[user_id] = True
-        await update.message.reply_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
-    else:
-        user_data[user_id] = {"first_name": first_name, "username": username}
-        save_data()
-        await update.message.reply_text(f"سلام {first_name}! 👋 لطفاً سنت رو وارد کن 🧓 (عدد)")
+    keyboard = [
+        [InlineKeyboardButton("شروع ثبت‌نام", callback_data="start_registration")],
+        [InlineKeyboardButton("درباره ربات", callback_data="about_bot")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-# دستور /reset
+    await update.message.reply_text(
+        f"سلام {first_name}! 👋 لطفاً یکی از گزینه‌ها رو انتخاب کن.",
+        reply_markup=reply_markup
+    )
+
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if user_id in user_data:
@@ -106,7 +104,24 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("اطلاعاتی برای حذف وجود نداره.")
 
-# بررسی پیام‌های متنی
+# هندلر کلیک روی دکمه‌ها
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user_id = str(query.from_user.id)
+
+    if query.data == "start_registration":
+        if user_id in user_data:
+            temp_users[user_id] = True
+            await query.edit_message_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
+        else:
+            user_data[user_id] = {"first_name": query.from_user.first_name, "username": query.from_user.username or "بدون‌نام‌کاربری"}
+            save_data()
+            await query.edit_message_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
+    elif query.data == "about_bot":
+        await query.edit_message_text("این ربات برنامه ورزشی شخصی برای شما تهیه می‌کند.")
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     text = update.message.text.strip()
@@ -165,7 +180,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_data()
         os.remove(pdf_file)
 
-# راه‌اندازی Webhook با FastAPI
+# ======= پایان تغییرات ========
+
 load_data()
 TOKEN = "7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8"
 WEBHOOK_PATH = f"/bot/{TOKEN}"
@@ -177,11 +193,12 @@ application = ApplicationBuilder().token(TOKEN).rate_limiter(AIORateLimiter()).b
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("reset", reset))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+application.add_handler(CallbackQueryHandler(button_handler))  # اضافه شد
 
 @app.get("/")
 async def root():
     return {"message": "Bot is running 🚀"}
-    
+
 @app.on_event("startup")
 async def on_startup():
     await application.initialize()
