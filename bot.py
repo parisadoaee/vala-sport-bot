@@ -166,8 +166,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # راه‌اندازی Webhook با FastAPI
 load_data()
-TOKEN = "7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8"
+TOKEN = "7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8"  # 🔐 توکن رباتت رو اینجا بذار
 WEBHOOK_PATH = f"/bot/{TOKEN}"
+WEBHOOK_URL = "https://vala-sport-bot.onrender.com" + WEBHOOK_PATH  # 🔗 آدرس سایتت روی Render
+
 app = FastAPI()
 application = ApplicationBuilder().token(TOKEN).rate_limiter(AIORateLimiter()).build()
 
@@ -185,8 +187,7 @@ if __name__ == "__main__":
     import asyncio
     async def main():
         await application.initialize()
-        await application.bot.set_webhook(url="https://your-render-url.onrender.com" + WEBHOOK_PATH)
+        await application.bot.set_webhook(url=WEBHOOK_URL)
         await application.start()
-        await application.updater.start_polling()
     asyncio.run(main())
     uvicorn.run("bot:app", host="0.0.0.0", port=10000)
