@@ -170,12 +170,21 @@ TOKEN = "7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8"  # 🔐 توکن ربا
 WEBHOOK_PATH = f"/bot/{TOKEN}"
 WEBHOOK_URL = "https://vala-sport-bot.onrender.com" + WEBHOOK_PATH  # 🔗 آدرس سایتت روی Render
 
+# تعریف FastAPI و Bot
 app = FastAPI()
 application = ApplicationBuilder().token(TOKEN).rate_limiter(AIORateLimiter()).build()
 
+# اضافه کردن هندلرها
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("reset", reset))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+# تابع async برای init و webhook
+@app.on_event("startup")
+async def on_startup():
+    await application.initialize()
+    await application.bot.set_webhook(url=WEBHOOK_URL)
+    await application.start()
 
 @app.post(WEBHOOK_PATH)
 async def telegram_webhook(req: Request):
@@ -185,11 +194,3 @@ async def telegram_webhook(req: Request):
 
     return {"status": "ok"}
 
-if __name__ == "__main__":
-    import asyncio
-    async def main():
-        await application.initialize()
-        await application.bot.set_webhook(url=WEBHOOK_URL)
-        await application.start()
-    asyncio.run(main())
-    uvicorn.run("bot:app", host="0.0.0.0", port=10000)
