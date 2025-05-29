@@ -183,7 +183,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ======= پایان تغییرات ========
 
 load_data()
-TOKEN = "7734476012:AAEeYTo5gQoyQHYJm6cZrT2ZwmRrnBV3uD8"
+TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEBHOOK_PATH = f"/bot/{TOKEN}"
 WEBHOOK_URL = "https://vala-sport-bot.onrender.com" + WEBHOOK_PATH
 
