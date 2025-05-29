@@ -5,8 +5,8 @@ import arabic_reshaper
 from fpdf.enums import XPos, YPos
 from bidi.algorithm import get_display
 from fpdf import FPDF
-from telegram import Update, InputFile, InlineKeyboardButton, InlineKeyboardMarkup  # اضافه شد
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters, CallbackQueryHandler  # CallbackQueryHandler اضافه شد
+from telegram import Update, InputFile, KeyboardButton, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from fastapi import FastAPI, Request
 from telegram.ext import AIORateLimiter
 import uvicorn
@@ -77,23 +77,21 @@ def create_pdf(user):
     pdf.output(filename)
     return filename
 
-# ======= تغییرات در اینجا ========
+# ======= تابع start با دکمه Start ========
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.message.from_user.id)
-    first_name = update.message.from_user.first_name
-    username = update.message.from_user.username or "بدون‌نام‌کاربری"
+    keyboard = [[KeyboardButton("Start")]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
 
-    keyboard = [
-        [InlineKeyboardButton("شروع ثبت‌نام", callback_data="start_registration")],
-        [InlineKeyboardButton("درباره ربات", callback_data="about_bot")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text(
-        f"سلام {first_name}! 👋 لطفاً یکی از گزینه‌ها رو انتخاب کن.",
-        reply_markup=reply_markup
+    welcome_text = (
+        "\U0001F3CB\uFE0F به ربات ورزشی «والا» خوش اومدی!\n\n"
+        "من اینجا کنارتم تا با برنامه‌های ورزشی و رژیم غذایی مناسب، به اهدافت برسی \U0001F4AA\n\n"
+        "برای شروع روی دکمه پایین کلیک کن \uD83D\uDC47"
     )
+
+    await update.message.reply_text(welcome_text, reply_markup=reply_markup)
+
+# ======= تابع reset برای حذف اطلاعات ========
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
@@ -104,27 +102,24 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("اطلاعاتی برای حذف وجود نداره.")
 
-# هندلر کلیک روی دکمه‌ها
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    user_id = str(query.from_user.id)
-
-    if query.data == "start_registration":
-        if user_id in user_data:
-            temp_users[user_id] = True
-            await query.edit_message_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
-        else:
-            user_data[user_id] = {"first_name": query.from_user.first_name, "username": query.from_user.username or "بدون‌نام‌کاربری"}
-            save_data()
-            await query.edit_message_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
-    elif query.data == "about_bot":
-        await query.edit_message_text("این ربات برنامه ورزشی شخصی برای شما تهیه می‌کند.")
+# ======= هندلر پیام‌ها ========
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     text = update.message.text.strip()
+
+    if text == "Start":
+        if user_id in user_data:
+            temp_users[user_id] = True
+            await update.message.reply_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
+        else:
+            user_data[user_id] = {
+                "first_name": update.message.from_user.first_name,
+                "username": update.message.from_user.username or "بدون‌نام‌کاربری"
+            }
+            save_data()
+            await update.message.reply_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
+        return
 
     if user_id in temp_users:
         if "بله" in text:
@@ -180,7 +175,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_data()
         os.remove(pdf_file)
 
-# ======= پایان تغییرات ========
+# ======= شروع اپلیکیشن ========
 
 load_data()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -193,11 +188,10 @@ application = ApplicationBuilder().token(TOKEN).rate_limiter(AIORateLimiter()).b
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("reset", reset))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-application.add_handler(CallbackQueryHandler(button_handler))  # اضافه شد
 
 @app.get("/")
 async def root():
-    return {"message": "Bot is running 🚀"}
+    return {"message": "Bot is running \ud83d\ude80"}
 
 @app.on_event("startup")
 async def on_startup():
@@ -208,12 +202,11 @@ async def on_startup():
 @app.post(WEBHOOK_PATH)
 async def telegram_webhook(req: Request):
     data = await req.json()
-    print("📩 پیام دریافتی:", data)
+    print("\ud83d\udce9 پیام دریافتی:", data)
     await application.process_update(Update.de_json(data, application.bot))
     return {"status": "ok"}
 
 if __name__ == "__main__":
     import uvicorn
-    import os
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run("bot:app", host="0.0.0.0", port=port)
