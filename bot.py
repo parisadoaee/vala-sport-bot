@@ -81,16 +81,18 @@ def create_pdf(user):
 # ======= تابع start با دکمه Start ========
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[KeyboardButton("Start")]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    welcome_text = "🏋️ به ربات ورزشی «والا» خوش اومدی!\n\nمن اینجا کنارتم تا با برنامه\u200cهای ورزشی و رژیم غذایی مناسب، به اهدافت برسی 💪\n\nبرای شروع روی دکمه پایین کلیک کن 👇"
+    
+    # این خط رو اضافه کن برای دور زدن مشکل surrogate:
+    welcome_text = welcome_text.encode('utf-16', 'surrogatepass').decode('utf-16')
 
-    welcome_text = (
-        "\U0001F3CB\uFE0F به ربات ورزشی «والا» خوش اومدی!\n\n"
-        "من اینجا کنارتم تا با برنامه‌های ورزشی و رژیم غذایی مناسب، به اهدافت برسی \U0001F4AA\n\n"
-        "برای شروع روی دکمه پایین کلیک کن \uD83D\uDC47"
+    reply_markup = ReplyKeyboardMarkup(
+        [["شروع برنامه"]],
+        resize_keyboard=True
     )
 
     await update.message.reply_text(welcome_text, reply_markup=reply_markup)
+
 
 # ======= تابع reset برای حذف اطلاعات ========
 
