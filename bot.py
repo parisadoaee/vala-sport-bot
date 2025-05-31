@@ -10,6 +10,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 from fastapi import FastAPI, Request
 from telegram.ext import AIORateLimiter
 import uvicorn
+from fastapi.responses import JSONResponse  # حتماً بالای فایل ایمپورت بشه
 
 nest_asyncio.apply()
 
@@ -191,7 +192,7 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_m
 
 @app.get("/")
 async def root():
-    return {"message": "Bot is running \ud83d\ude80"}
+    return JSONResponse(content={"message": "Bot is running 🚀"})
 
 @app.on_event("startup")
 async def on_startup():
