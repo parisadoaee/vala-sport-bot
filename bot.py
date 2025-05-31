@@ -12,6 +12,8 @@ from telegram.ext import AIORateLimiter
 import uvicorn
 from fastapi.responses import JSONResponse  # حتماً بالای فایل ایمپورت بشه
 from telegram import ReplyKeyboardMarkup
+from telegram import Update
+from telegram.ext import ContextTypes
 
 nest_asyncio.apply()
 
@@ -108,18 +110,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     text = update.message.text.strip()
 
-    if text == "Start":
-        if user_id in user_data:
-            temp_users[user_id] = True
-            await update.message.reply_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
-        else:
-            user_data[user_id] = {
-                "first_name": update.message.from_user.first_name,
-                "username": update.message.from_user.username or "بدون‌نام‌کاربری"
-            }
-            save_data()
-            await update.message.reply_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
-        return
+    if text == "📋 برنامه ورزشی":
+    if user_id in user_data:
+        await update.message.reply_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
+    else:
+        user_data[user_id] = {
+            "first_name": update.message.from_user.first_name,
+            "username": update.message.from_user.username or "بدون‌نام‌کاربری"
+        }
+        save_data()
+        await update.message.reply_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
+    return
+
 
     if user_id in temp_users:
         if "بله" in text:
