@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from telegram.ext import AIORateLimiter
 import uvicorn
 from fastapi.responses import JSONResponse  # حتماً بالای فایل ایمپورت بشه
+from telegram import ReplyKeyboardMarkup
 
 nest_asyncio.apply()
 
@@ -80,19 +81,15 @@ def create_pdf(user):
 
 # ======= تابع start با دکمه Start ========
 
+from telegram import ReplyKeyboardMarkup
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    welcome_text = "🏋️ به ربات ورزشی «والا» خوش اومدی!\n\nمن اینجا کنارتم تا با برنامه\u200cهای ورزشی و رژیم غذایی مناسب، به اهدافت برسی 💪\n\nبرای شروع روی دکمه پایین کلیک کن 👇"
-    
-    # این خط رو اضافه کن برای دور زدن مشکل surrogate:
-    welcome_text = welcome_text.encode('utf-16', 'surrogatepass').decode('utf-16')
-
-    reply_markup = ReplyKeyboardMarkup(
-        [["شروع برنامه"]],
-        resize_keyboard=True
-    )
-
-    await update.message.reply_text(welcome_text, reply_markup=reply_markup)
-
+    keyboard = [
+        ["📋 برنامه ورزشی", "🥗 رژیم غذایی"],
+        ["🕒 زمان‌بندی", "💬 پشتیبانی"]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text("یکی از گزینه‌های زیر رو انتخاب کن:", reply_markup=reply_markup)
 
 # ======= تابع reset برای حذف اطلاعات ========
 
