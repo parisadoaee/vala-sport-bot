@@ -10,10 +10,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 from fastapi import FastAPI, Request
 from telegram.ext import AIORateLimiter
 import uvicorn
-from fastapi.responses import JSONResponse  # حتماً بالای فایل ایمپورت بشه
-from telegram import ReplyKeyboardMarkup
-from telegram import Update
-from telegram.ext import ContextTypes
+from fastapi.responses import JSONResponse
 
 nest_asyncio.apply()
 
@@ -83,8 +80,6 @@ def create_pdf(user):
 
 # ======= تابع start با دکمه Start ========
 
-from telegram import ReplyKeyboardMarkup
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         ["📋 برنامه ورزشی", "🥗 رژیم غذایی"],
@@ -123,6 +118,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
         return
 
+    if context.user_data.get("state") == "cardio_selected":
+        if text.startswith("🏃‍♂️ روز"):
+            await update.message.reply_animation("https://media.giphy.com/media/l0Exk8EUzSLsrErEQ/giphy.gif")
+            await update.message.reply_text(
+                "⬇️ تمرین شما:\n*10 بار دویدن در جا*\n\nوقتی تموم شد، دکمه مورد نظر رو بزن:",
+                reply_markup=ReplyKeyboardMarkup([["✅ Done", "⏭ Next"], ["🔙 Menu"]], resize_keyboard=True)
+            )
+            context.user_data["state"] = "cardio_in_progress"
+            return
+
+    if context.user_data.get("state") == "cardio_in_progress":
+        if text == "✅ Done":
+            await update.message.reply_text("👏 آفرین! تمرینت تموم شد.")
+            context.user_data["state"] = None
+        elif text == "⏭ Next":
+            await update.message.reply_text("⏭ مرحله بعدی: 15 تا اسکوات بزن 💪")
+        elif text == "🔙 Menu":
+            await start(update, context)
+            context.user_data["state"] = None
+        return
 
     if user_id in temp_users:
         if "بله" in text:
@@ -172,6 +187,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_document(
             InputFile(open(pdf_file, "rb"), filename=pdf_file)
         )
+
+        if "کاهش" in user["goal"].lower():
+            keyboard = [
+                ["🏃‍♂️ روز اول", "🏃‍♂️ روز دوم"],
+                ["🏃‍♂️ روز سوم", "🏃‍♂️ روز چهارم"]
+            ]
+            reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            await update.message.reply_text("✅ برنامه هوازی برای ۴ روز آماده‌ست. یکی از روزها رو انتخاب کن:", reply_markup=reply_markup)
+            context.user_data["state"] = "cardio_selected"
+        else:
+            await update.message.reply_text("اگه خواستی دوباره برنامه بگیری، دستور /start رو بزن 😊")
 
         archive_user(user_id)
         del user_data[user_id]
