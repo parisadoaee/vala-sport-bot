@@ -203,7 +203,7 @@ async def on_startup():
 @app.post(WEBHOOK_PATH)
 async def telegram_webhook(req: Request):
     data = await req.json()
-    print("\ud83d\udce9 پیام دریافتی:", data)
+    print("📩 پیام دریافتی:", data)
     await application.process_update(Update.de_json(data, application.bot))
     return {"status": "ok"}
 
