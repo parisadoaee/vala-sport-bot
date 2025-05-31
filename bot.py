@@ -111,16 +111,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
     if text == "📋 برنامه ورزشی":
-    if user_id in user_data:
-        await update.message.reply_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
-    else:
-        user_data[user_id] = {
-            "first_name": update.message.from_user.first_name,
-            "username": update.message.from_user.username or "بدون‌نام‌کاربری"
-        }
-        save_data()
-        await update.message.reply_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
-    return
+        if user_id in user_data:
+            await update.message.reply_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
+            temp_users[user_id] = True
+        else:
+            user_data[user_id] = {
+                "first_name": update.message.from_user.first_name,
+                "username": update.message.from_user.username or "بدون‌نام‌کاربری"
+            }
+            save_data()
+            await update.message.reply_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
+        return
 
 
     if user_id in temp_users:
