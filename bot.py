@@ -19,6 +19,30 @@ ARCHIVE_FILE = "archive.json"
 user_data = {}
 temp_users = {}
 
+# مسیر گیف‌ها در پوشه static
+cardio_gifs = {
+    "day1": [
+        "static/weight loss_day1 (1).gif",
+        "static/weight loss_day1 (2).gif",
+        "static/weight loss_day1 (3).gif",
+    ],
+    "day2": [
+        "static/weight loss_day2 (1).gif",
+        "static/weight loss_day2 (2).gif",
+        "static/weight loss_day2 (3).gif",
+    ],
+    "day3": [
+        "static/weight loss_day3 (1).gif",
+        "static/weight loss_day3 (2).gif",
+        "static/weight loss_day3 (3).gif",
+    ],
+    "day4": [
+        "static/weight loss_day4 (1).gif",
+        "static/weight loss_day4 (2).gif",
+        "static/weight loss_day4 (3).gif",
+    ],
+}
+
 def load_data():
     global user_data
     if os.path.exists(DATA_FILE):
@@ -105,6 +129,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     text = update.message.text.strip()
 
+    # انتخاب برنامه ورزشی
     if text == "📋 برنامه ورزشی":
         if user_id in user_data:
             await update.message.reply_text("👀 شما قبلاً ثبت‌نام کردی. آیا می‌خوای اطلاعاتت رو تغییر بدی؟ (بله / نه)")
@@ -118,27 +143,61 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("لطفاً سنت رو وارد کن 🧓 (عدد)")
         return
 
-    if context.user_data.get("state") == "cardio_selected":
-        if text.startswith("🏃‍♂️ روز"):
-            await update.message.reply_animation("https://media.giphy.com/media/l0Exk8EUzSLsrErEQ/giphy.gif")
-            await update.message.reply_text(
-                "⬇️ تمرین شما:\n*10 بار دویدن در جا*\n\nوقتی تموم شد، دکمه مورد نظر رو بزن:",
-                reply_markup=ReplyKeyboardMarkup([["✅ Done", "⏭ Next"], ["🔙 Menu"]], resize_keyboard=True)
-            )
-            context.user_data["state"] = "cardio_in_progress"
-            return
+    # انتخاب روزهای تمرین هوازی
+    if text in ["🏃‍♂️ روز اول", "🏃‍♂️ روز دوم", "🏃‍♂️ روز سوم", "🏃‍♂️ روز چهارم"]:
+        day_map = {
+            "🏃‍♂️ روز اول": "day1",
+            "🏃‍♂️ روز دوم": "day2",
+            "🏃‍♂️ روز سوم": "day3",
+            "🏃‍♂️ روز چهارم": "day4",
+        }
+        selected_day = day_map[text]
+        context.user_data["cardio_day"] = selected_day
+        context.user_data["gif_index"] = 0
 
+        gif_path = cardio_gifs[selected_day][0]
+        with open(gif_path, "rb") as f:
+            await update.message.reply_animation(f)
+
+        keyboard = ReplyKeyboardMarkup([["⏭ Next", "✅ Done"], ["🔙 Menu"]], resize_keyboard=True)
+        await update.message.reply_text(f"تمرین روز {text[-2:]} - ویدیوی 1 از 3", reply_markup=keyboard)
+        context.user_data["state"] = "cardio_in_progress"
+        return
+
+    # در حین تمرین هوازی با گیف‌ها
     if context.user_data.get("state") == "cardio_in_progress":
+        day = context.user_data.get("cardio_day")
+        idx = context.user_data.get("gif_index", 0)
+
         if text == "✅ Done":
             await update.message.reply_text("👏 آفرین! تمرینت تموم شد.")
             context.user_data["state"] = None
+            context.user_data.pop("cardio_day", None)
+            context.user_data.pop("gif_index", None)
+
         elif text == "⏭ Next":
-            await update.message.reply_text("⏭ مرحله بعدی: 15 تا اسکوات بزن 💪")
+            idx += 1
+            if idx >= len(cardio_gifs[day]):
+                await update.message.reply_text("🎉 تمرینات روز تموم شد! می‌تونی روز دیگه رو انتخاب کنی یا به منوی اصلی برگردی.")
+                context.user_data["state"] = None
+                context.user_data.pop("cardio_day", None)
+                context.user_data.pop("gif_index", None)
+            else:
+                context.user_data["gif_index"] = idx
+                gif_path = cardio_gifs[day][idx]
+                with open(gif_path, "rb") as f:
+                    await update.message.reply_animation(f)
+                await update.message.reply_text(f"تمرین روز {day[-1]} - ویدیوی {idx+1} از 3")
+
         elif text == "🔙 Menu":
             await start(update, context)
             context.user_data["state"] = None
+            context.user_data.pop("cardio_day", None)
+            context.user_data.pop("gif_index", None)
+
         return
 
+    # پاسخ به سوال تغییر اطلاعات
     if user_id in temp_users:
         if "بله" in text:
             del user_data[user_id]
@@ -150,12 +209,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             del temp_users[user_id]
             return
 
+    # شروع ثبت‌نام اگر اطلاعات نیست
     if user_id not in user_data:
         await update.message.reply_text("اول دستور /start رو بزن.")
         return
 
     user = user_data[user_id]
 
+    # ادامه مراحل ثبت‌نام
     if "age" not in user:
         if not text.isdigit():
             await update.message.reply_text("سنت رو به عدد وارد کن.")
@@ -163,6 +224,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user["age"] = int(text)
         save_data()
         await update.message.reply_text("الان وزنت چقدره؟ ⚖️ (کیلوگرم)")
+
     elif "weight" not in user:
         if not text.isdigit():
             await update.message.reply_text("وزنت رو به عدد وارد کن.")
@@ -170,6 +232,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user["weight"] = int(text)
         save_data()
         await update.message.reply_text("قدت رو بگو چقدره؟ 📏 (سانتی‌متر)")
+
     elif "height" not in user:
         if not text.isdigit():
             await update.message.reply_text("قدت رو به عدد وارد کن.")
@@ -177,6 +240,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user["height"] = int(text)
         save_data()
         await update.message.reply_text("هدفت از ورزش چیه؟ 🎯 (مثلاً کاهش وزن، افزایش حجم یا تناسب اندام)")
+
     elif "goal" not in user:
         user["goal"] = text
         save_data()
@@ -235,7 +299,10 @@ async def telegram_webhook(req: Request):
     await application.process_update(Update.de_json(data, application.bot))
     return {"status": "ok"}
 
+@app.on_event("shutdown")
+async def on_shutdown():
+    await application.stop()
+    await application.shutdown()
+
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("bot:app", host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
