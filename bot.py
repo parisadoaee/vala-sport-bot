@@ -22,24 +22,24 @@ temp_users = {}
 # مسیر گیف‌ها در پوشه static
 cardio_gifs = {
     "day1": [
-        "static/weight loss_day1 (1).gif",
-        "static/weight loss_day1 (2).gif",
-        "static/weight loss_day1 (3).gif",
+        "static/weight loss_day1 (1).mp4",
+        "static/weight loss_day1 (2).mp4",
+        "static/weight loss_day1 (3).mp4",
     ],
     "day2": [
-        "static/weight loss_day2 (1).gif",
-        "static/weight loss_day2 (2).gif",
-        "static/weight loss_day2 (3).gif",
+        "static/weight loss_day2 (1).mp4",
+        "static/weight loss_day2 (2).mp4",
+        "static/weight loss_day2 (3).mp4",
     ],
     "day3": [
-        "static/weight loss_day3 (1).gif",
-        "static/weight loss_day3 (2).gif",
-        "static/weight loss_day3 (3).gif",
+        "static/weight loss_day3 (1).mp4",
+        "static/weight loss_day3 (2).mp4",
+        "static/weight loss_day3 (3).mp4",
     ],
     "day4": [
-        "static/weight loss_day4 (1).gif",
-        "static/weight loss_day4 (2).gif",
-        "static/weight loss_day4 (3).gif",
+        "static/weight loss_day4 (1).mp4",
+        "static/weight loss_day4 (2).mp4",
+        "static/weight loss_day4 (3).mp4",
     ],
 }
 
@@ -157,7 +157,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         gif_path = cardio_gifs[selected_day][0]
         with open(gif_path, "rb") as f:
-            await update.message.reply_animation(f)
+            await update.message.reply_video(f)
 
         keyboard = ReplyKeyboardMarkup([["⏭ Next", "✅ Done"], ["🔙 Menu"]], resize_keyboard=True)
         await update.message.reply_text(f"تمرین روز {text[-2:]} - ویدیوی 1 از 3", reply_markup=keyboard)
