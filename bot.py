@@ -103,14 +103,14 @@ def create_pdf(user):
     return filename
 
 # ======= تابع start با دکمه Start ========
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         ["📋 برنامه ورزشی", "🥗 رژیم غذایی"],
         ["🕒 زمان‌بندی", "💬 پشتیبانی"]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text("یکی از گزینه‌های زیر رو انتخاب کن:", reply_markup=reply_markup)
+    first_name = update.message.from_user.first_name
+    await update.message.reply_text(f"سلام {first_name} 👋\nیکی از گزینه‌های زیر رو انتخاب کن:", reply_markup=reply_markup)
 
 # ======= تابع reset برای حذف اطلاعات ========
 
