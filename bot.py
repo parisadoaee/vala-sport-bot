@@ -159,29 +159,35 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(gif_path, "rb") as f:
             await update.message.reply_video(f)
 
-        keyboard = ReplyKeyboardMarkup([["⏭ Next", "✅ Done"], ["🔙 Menu"]], resize_keyboard=True)
+        keyboard = ReplyKeyboardMarkup([["⏭ Next", "✅ Done"], ["🔙 بازگشت به صفحه قبل"]], resize_keyboard=True)
         await update.message.reply_text(f"تمرین روز {text[-2:]} - ویدیوی 1 از 3", reply_markup=keyboard)
         context.user_data["state"] = "cardio_in_progress"
         return
 
-    # در حین تمرین هوازی با گیف‌ها
+    # در حین تمرین هوازی
     if context.user_data.get("state") == "cardio_in_progress":
         day = context.user_data.get("cardio_day")
         idx = context.user_data.get("gif_index", 0)
 
         if text == "✅ Done":
             await update.message.reply_text("👏 آفرین! تمرینت تموم شد.")
-            context.user_data["state"] = None
-            context.user_data.pop("cardio_day", None)
-            context.user_data.pop("gif_index", None)
+            context.user_data.clear()
+            keyboard = ReplyKeyboardMarkup([
+                ["🏃‍♂️ روز اول", "🏃‍♂️ روز دوم"],
+                ["🏃‍♂️ روز سوم", "🏃‍♂️ روز چهارم"]
+            ], resize_keyboard=True)
+            await update.message.reply_text("✅ می‌تونی یه روز دیگه رو هم تمرین کنی:", reply_markup=keyboard)
 
         elif text == "⏭ Next":
             idx += 1
             if idx >= len(cardio_gifs[day]):
-                await update.message.reply_text("🎉 تمرینات روز تموم شد! می‌تونی روز دیگه رو انتخاب کنی یا به منوی اصلی برگردی.")
-                context.user_data["state"] = None
-                context.user_data.pop("cardio_day", None)
-                context.user_data.pop("gif_index", None)
+                await update.message.reply_text("🎉 تمرینات روز تموم شد!")
+                context.user_data.clear()
+                keyboard = ReplyKeyboardMarkup([
+                    ["🏃‍♂️ روز اول", "🏃‍♂️ روز دوم"],
+                    ["🏃‍♂️ روز سوم", "🏃‍♂️ روز چهارم"]
+                ], resize_keyboard=True)
+                await update.message.reply_text("✅ می‌تونی یه روز دیگه رو انتخاب کنی:", reply_markup=keyboard)
             else:
                 context.user_data["gif_index"] = idx
                 gif_path = cardio_gifs[day][idx]
@@ -189,11 +195,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await update.message.reply_animation(f)
                 await update.message.reply_text(f"تمرین روز {day[-1]} - ویدیوی {idx+1} از 3")
 
-        elif text == "🔙 Menu":
-            await start(update, context)
-            context.user_data["state"] = None
-            context.user_data.pop("cardio_day", None)
-            context.user_data.pop("gif_index", None)
+        elif text == "🔙 بازگشت به صفحه قبل":
+            keyboard = ReplyKeyboardMarkup([
+                ["🏃‍♂️ روز اول", "🏃‍♂️ روز دوم"],
+                ["🏃‍♂️ روز سوم", "🏃‍♂️ روز چهارم"]
+            ], resize_keyboard=True)
+            await update.message.reply_text("لطفاً یه روز رو انتخاب کن:", reply_markup=keyboard)
+            context.user_data.clear()
 
         return
 
@@ -216,7 +224,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = user_data[user_id]
 
-    # ادامه مراحل ثبت‌نام
+    # ادامه ثبت‌نام
     if "age" not in user:
         if not text.isdigit():
             await update.message.reply_text("سنت رو به عدد وارد کن.")
@@ -247,10 +255,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         pdf_file = create_pdf(user)
         await update.message.reply_text("✅ مشخصاتت ثبت شد! اینم برنامه‌ت:")
-
-        await update.message.reply_document(
-            InputFile(open(pdf_file, "rb"), filename=pdf_file)
-        )
+        await update.message.reply_document(InputFile(open(pdf_file, "rb"), filename=pdf_file))
 
         if "کاهش" in user["goal"].lower():
             keyboard = [
@@ -258,7 +263,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ["🏃‍♂️ روز سوم", "🏃‍♂️ روز چهارم"]
             ]
             reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-            await update.message.reply_text("✅ برنامه هوازی برای ۴ روز آماده‌ست. یکی از روزها رو انتخاب کن:", reply_markup=reply_markup)
+            await update.message.reply_text("✅ برنامه هوازی آماده‌ست. یکی از روزها رو انتخاب کن:", reply_markup=reply_markup)
             context.user_data["state"] = "cardio_selected"
         else:
             await update.message.reply_text("اگه خواستی دوباره برنامه بگیری، دستور /start رو بزن 😊")
@@ -268,7 +273,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_data()
         os.remove(pdf_file)
 
-# ======= شروع اپلیکیشن ========
+# ======= FastAPI اپلیکیشن ========
 
 load_data()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
