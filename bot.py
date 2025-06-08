@@ -1,4 +1,4 @@
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -46,6 +46,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🏠 بازگشت به منوی اصلی":
         reply_markup = ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True)
         await update.message.reply_text("به منوی اصلی برگشتی، یکی از گزینه‌ها را انتخاب کن:", reply_markup=reply_markup)
+        return
+
+    elif text == "💬 مشاوره":
+        keyboard = [[InlineKeyboardButton("ارتباط با پریسا 💬", url="https://t.me/parisad1368")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text("برای دریافت مشاوره مستقیم، روی دکمه زیر کلیک کن:", reply_markup=reply_markup)
         return
 
     else:
