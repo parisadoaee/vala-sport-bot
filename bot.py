@@ -105,9 +105,10 @@ def create_pdf(user):
 # ======= تابع start با دکمه Start ========
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        ["📋 برنامه ورزشی", "🥗 رژیم غذایی"],
-        ["🕒 زمان‌بندی", "💬 پشتیبانی"]
-    ]
+    ["💬 مشاوره", "👛 کیف پول", "🏃 حرکات"],
+    ["🔰 پایه", "🚀 پیشرفته", "📘 مقدماتی"]
+]
+
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     first_name = update.message.from_user.first_name
     await update.message.reply_text(f"سلام {first_name} 👋\nیکی از گزینه‌های زیر رو انتخاب کن:", reply_markup=reply_markup)
