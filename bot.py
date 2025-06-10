@@ -1,5 +1,5 @@
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -22,64 +22,78 @@ basic_program_links = {
     "برنامه 6": "https://github.com/parisadoaee/vala-sport-bot/raw/main/basic%20program/basic%20program6.pdf",
 }
 
-# منوهای کیبورد
-main_keyboard = [
-    ["💬 مشاوره", "👛 کیف پول", "🏃 حرکات"],
-    ["🔰 پایه", "🚀 پیشرفته", "📘 مقدماتی"]
-]
+# دکمه‌های inline برای منوها
+main_keyboard_inline = InlineKeyboardMarkup([
+    [InlineKeyboardButton("💬 مشاوره", callback_data="مشاوره"), InlineKeyboardButton("👛 کیف پول", callback_data="کیف پول")],
+    [InlineKeyboardButton("🏃 حرکات", callback_data="حرکات"), InlineKeyboardButton("📘 مقدماتی", callback_data="مقدماتی")],
+    [InlineKeyboardButton("🔰 پایه", callback_data="پایه"), InlineKeyboardButton("🚀 پیشرفته", callback_data="پیشرفته")],
+])
 
-moves_keyboard = [
-    ["🖐️ دست", "🦵 پا", "💪 شانه"],
-    ["❤️ سینه", "🏋️‍♂️ شکم", "🦴 پشت"],
-    ["🦶 ساق", "🏃 کل بدن"],
-    ["🏠 بازگشت به منوی اصلی"]
-]
+moves_keyboard_inline = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🖐️ دست", callback_data="دست"), InlineKeyboardButton("🦵 پا", callback_data="پا"), InlineKeyboardButton("💪 شانه", callback_data="شانه")],
+    [InlineKeyboardButton("❤️ سینه", callback_data="سینه"), InlineKeyboardButton("🏋️‍♂️ شکم", callback_data="شکم"), InlineKeyboardButton("🦴 پشت", callback_data="پشت")],
+    [InlineKeyboardButton("🦶 ساق", callback_data="ساق"), InlineKeyboardButton("🏃 کل بدن", callback_data="کل بدن")],
+    [InlineKeyboardButton("🏠 بازگشت به منوی اصلی", callback_data="بازگشت اصلی")]
+])
 
-basic_program_keyboard = [
-    ["برنامه 1", "برنامه 2"],
-    ["برنامه 3", "برنامه 4"],
-    ["برنامه 5", "برنامه 6"],
-    ["🏠 بازگشت به منوی اصلی"]
-]
+basic_program_keyboard_inline = InlineKeyboardMarkup([
+    [InlineKeyboardButton("برنامه 1", callback_data="برنامه 1"), InlineKeyboardButton("برنامه 2", callback_data="برنامه 2")],
+    [InlineKeyboardButton("برنامه 3", callback_data="برنامه 3"), InlineKeyboardButton("برنامه 4", callback_data="برنامه 4")],
+    [InlineKeyboardButton("برنامه 5", callback_data="برنامه 5"), InlineKeyboardButton("برنامه 6", callback_data="برنامه 6")],
+    [InlineKeyboardButton("🏠 بازگشت به منوی اصلی", callback_data="بازگشت اصلی")]
+])
 
 # دستور /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     first_name = update.message.from_user.first_name or "دوست عزیز"
-    reply_markup = ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True)
-    await update.message.reply_text(f"سلام {first_name} 👋\nیکی از گزینه‌های زیر رو انتخاب کن:", reply_markup=reply_markup)
+    await update.message.reply_text(f"سلام {first_name} 👋\nیکی از گزینه‌های زیر رو انتخاب کن:", reply_markup=main_keyboard_inline)
 
-# پردازش پیام‌ها
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
+# هندلر برای دکمه‌های inline
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
 
-    if text == "🏃 حرکات":
-        reply_markup = ReplyKeyboardMarkup(moves_keyboard, resize_keyboard=True)
-        await update.message.reply_text("لطفاً عضوی از بدن رو انتخاب کن:", reply_markup=reply_markup)
+    if data == "حرکات":
+        await query.edit_message_text("لطفاً عضوی از بدن رو انتخاب کن:", reply_markup=moves_keyboard_inline)
 
-    elif text in ["🖐️ دست", "🦵 پا", "💪 شانه", "❤️ سینه", "🏋️‍♂️ شکم", "🦴 پشت", "🦶 ساق", "🏃 کل بدن"]:
-        await update.message.reply_text(f"حرکات مربوط به {text} را اینجا نمایش می‌دهیم.")
+    elif data in ["دست", "پا", "شانه", "سینه", "شکم", "پشت", "ساق", "کل بدن"]:
+        await query.edit_message_text(f"حرکات مربوط به {data} را اینجا نمایش می‌دهیم.", reply_markup=moves_keyboard_inline)
 
-    elif text == "📘 مقدماتی":
-        reply_markup = ReplyKeyboardMarkup(basic_program_keyboard, resize_keyboard=True)
-        await update.message.reply_text("یکی از برنامه‌های زیر رو انتخاب کن:", reply_markup=reply_markup)
+    elif data == "مقدماتی":
+        await query.edit_message_text("یکی از برنامه‌های زیر رو انتخاب کن:", reply_markup=basic_program_keyboard_inline)
 
-    elif text in basic_program_links:
-        await update.message.reply_document(document=basic_program_links[text])
+    elif data in basic_program_links:
+        await context.bot.send_document(chat_id=query.message.chat_id, document=basic_program_links[data])
+        # بعد از ارسال فایل، منو برنامه‌های مقدماتی رو دوباره نشون می‌دیم
+        await query.edit_message_text("یکی از برنامه‌های زیر رو انتخاب کن:", reply_markup=basic_program_keyboard_inline)
 
-    elif text == "🏠 بازگشت به منوی اصلی":
-        reply_markup = ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True)
-        await update.message.reply_text("به منوی اصلی برگشتی، یکی از گزینه‌ها را انتخاب کن:", reply_markup=reply_markup)
+    elif data == "بازگشت اصلی":
+        await query.edit_message_text("به منوی اصلی برگشتی، یکی از گزینه‌ها را انتخاب کن:", reply_markup=main_keyboard_inline)
 
-    elif text == "💬 مشاوره":
-        keyboard = [[InlineKeyboardButton("ارتباط با پریسا 💬", url="https://t.me/parisad1368")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text("برای دریافت مشاوره مستقیم، روی دکمه زیر کلیک کن:", reply_markup=reply_markup)
+    elif data == "مشاوره":
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("ارتباط با پریسا 💬", url="https://t.me/parisad1368")]])
+        await query.edit_message_text("برای دریافت مشاوره مستقیم، روی دکمه زیر کلیک کن:", reply_markup=keyboard)
+
+    elif data == "کیف پول":
+        await query.edit_message_text("کیف پول در حال حاضر فعال نیست.", reply_markup=main_keyboard_inline)
+
+    elif data == "پایه":
+        await query.edit_message_text("شما بخش پایه را انتخاب کردید.", reply_markup=main_keyboard_inline)
+
+    elif data == "پیشرفته":
+        await query.edit_message_text("شما بخش پیشرفته را انتخاب کردید.", reply_markup=main_keyboard_inline)
 
     else:
-        await update.message.reply_text("لطفاً یکی از گزینه‌های موجود را انتخاب کن.")
+        await query.edit_message_text("لطفاً یکی از گزینه‌های موجود را انتخاب کن.", reply_markup=main_keyboard_inline)
 
-# هندلرها
+# هندلر پیام‌های متنی (برای مواقعی که کاربر تایپ کنه)
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("لطفاً از دکمه‌های زیر استفاده کن.")
+
+# اضافه کردن هندلرها
 application.add_handler(CommandHandler("start", start))
+application.add_handler(CallbackQueryHandler(button_handler))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 # FastAPI
