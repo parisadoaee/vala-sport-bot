@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, ContextTypes,
     CallbackQueryHandler, MessageHandler, filters
@@ -25,7 +25,7 @@ basic_program_links = {
     "برنامه 6": "https://github.com/parisadoaee/vala-sport-bot/raw/main/basic%20program/basic%20program6.pdf",
 }
 
-# کلیدهای منوی اصلی به صورت InlineKeyboardButtons
+# کلیدهای منوی اصلی
 main_inline_buttons = [
     [InlineKeyboardButton("💬 مشاوره", callback_data="consultation")],
     [InlineKeyboardButton("👛 کیف پول", callback_data="wallet")],
@@ -35,7 +35,7 @@ main_inline_buttons = [
     [InlineKeyboardButton("🚀 پیشرفته", callback_data="advanced_level")]
 ]
 
-# کلیدهای حرکات
+# دکمه‌های حرکات
 moves_inline_buttons = [
     [InlineKeyboardButton("🖐️ دست", callback_data="move_hand"), InlineKeyboardButton("🦵 پا", callback_data="move_leg"), InlineKeyboardButton("💪 شانه", callback_data="move_shoulder")],
     [InlineKeyboardButton("❤️ سینه", callback_data="move_chest"), InlineKeyboardButton("🏋️‍♂️ شکم", callback_data="move_abs"), InlineKeyboardButton("🦴 پشت", callback_data="move_back")],
@@ -43,7 +43,7 @@ moves_inline_buttons = [
     [InlineKeyboardButton("🏠 بازگشت به صفحه اصلی", callback_data="back_to_main")]
 ]
 
-# کلیدهای برنامه‌های مقدماتی
+# دکمه‌های برنامه‌های مقدماتی
 basic_program_inline_buttons = [
     [InlineKeyboardButton("برنامه 1", callback_data="basic_program1"), InlineKeyboardButton("برنامه 2", callback_data="basic_program2")],
     [InlineKeyboardButton("برنامه 3", callback_data="basic_program3"), InlineKeyboardButton("برنامه 4", callback_data="basic_program4")],
@@ -51,7 +51,7 @@ basic_program_inline_buttons = [
     [InlineKeyboardButton("🏠 بازگشت به صفحه اصلی", callback_data="back_to_main")]
 ]
 
-# پاسخ‌های متنی حرکات بدن
+# پاسخ‌های حرکات بدن
 moves_text = {
     "move_hand": "حرکات مربوط به دست را اینجا نمایش می‌دهیم.",
     "move_leg": "حرکات مربوط به پا را اینجا نمایش می‌دهیم.",
@@ -70,16 +70,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"سلام {first_name} 👋\nیکی از گزینه‌های زیر رو انتخاب کن:",
         reply_markup=InlineKeyboardMarkup(main_inline_buttons)
     )
+    await update.message.reply_text(" ", reply_markup=ReplyKeyboardRemove())
 
-# هندل کردن کلیک روی دکمه‌ها
+# هندل دکمه‌ها
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     data = query.data
 
     if data == "back_to_main":
-        # بازگشت به منوی اصلی
         await query.message.edit_text(
             "یکی از گزینه‌های زیر رو انتخاب کن:",
             reply_markup=InlineKeyboardMarkup(main_inline_buttons)
@@ -115,12 +114,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(basic_program_inline_buttons)
         )
     elif data.startswith("basic_program"):
-        program_key = "برنامه " + data[-1]  # استخراج شماره برنامه
+        program_key = "برنامه " + data[-1]
         link = basic_program_links.get(program_key)
         if link:
             await query.message.reply_document(document=link)
         else:
-            await query.message.edit_message_text(
+            await query.message.edit_text(
                 "برنامه مورد نظر یافت نشد.",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 بازگشت به صفحه اصلی", callback_data="back_to_main")]])
             )
@@ -142,12 +141,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 بازگشت به صفحه اصلی", callback_data="back_to_main")]])
         )
 
-# هندل پیام‌ها (متن وارد شده توسط کاربر)
+# پیام متنی
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "لطفاً یکی از گزینه‌های موجود را با دکمه‌ها انتخاب کن.",
         reply_markup=InlineKeyboardMarkup(main_inline_buttons)
     )
+    await update.message.reply_text(" ", reply_markup=ReplyKeyboardRemove())
 
 # هندلرها
 application.add_handler(CommandHandler("start", start))
